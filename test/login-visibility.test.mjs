@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import vm from 'node:vm';
 
 const source = (await readFile(new URL('../public/login.js', import.meta.url), 'utf8'))
-  .replace(/^import .*;\n/, '');
+  .replace(/^import .*;\r?\n/, '');
 
 async function screen(session, response) {
   const elements = new Map();
@@ -31,13 +31,13 @@ test('signed-out screen hides notes and never requests the DB', async () => {
   assert.equal(elements.get('#note-form').hidden, true);
 });
 
-test('DB configuration failure hides editor; successful list enables CRUD controls', async () => {
+test('DB configuration failure hides cards and explains failure; successful list enables CRUD controls', async () => {
   const session = { access_token: 'local-test-only' };
   const failed = await screen(session, { ok: false, status: 503,
     async json() { return { error: 'DATABASE_CONFIG_UNAVAILABLE' }; } });
   assert.equal(failed.elements.get('#cards').hidden, true);
-  assert.equal(failed.elements.get('#note-form').hidden, true);
-  assert.match(failed.elements.get('#auth-status').textContent, /HTTP 503, DATABASE_CONFIG_UNAVAILABLE/);
+  assert.equal(failed.elements.get('#note-form').hidden, false);
+  assert.match(failed.elements.get('#auth-status').textContent, /서버 DB 연결 설정이 필요합니다/);
   const ready = await screen(session, { ok: true, status: 200,
     async json() { return [{ id: 'local-fixture', title: 'test-title', body: 'test-content' }]; } });
   assert.equal(ready.elements.get('#cards').hidden, false);

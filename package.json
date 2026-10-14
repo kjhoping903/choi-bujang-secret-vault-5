@@ -11,7 +11,8 @@
     "detect:test": "node scripts/detect-test.mjs",
     "fixture:7": "node scripts/fixture-7.mjs",
     "xdr:run": "node scripts/xdr-run.mjs",
-    "test:t05": "node --test --test-reporter=tap test/t05-health.test.mjs"
+    "test:t05": "node --test --test-reporter=tap test/t05-health.test.mjs",
+    "test:web": "node --experimental-test-module-mocks --test test/materials-crud.test.mjs test/health-status.test.mjs test/login-ui.test.mjs test/login-visibility.test.mjs test/t05-health.test.mjs test/version-badge.test.mjs test/version-info.test.mjs"
   },
   "engines": {
     "node": ">=22"

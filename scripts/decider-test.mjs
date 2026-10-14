@@ -24,10 +24,21 @@ export async function checkDecider({ decide, ruleIds }) {
     throw new Error('6단계 device_registered 규칙을 먼저 구현하고 RULE_IDS에 적어 주세요.');
   }
   const { normal, suspicious } = fixtureRequests();
+  const { deviceRegistered, ...withoutRegistration } = normal;
   const checks = [
     { name: '등록 기기의 정상 요청', request: normal, decision: 'allow' },
     { name: '미등록 기기의 가상 요청', request: { ...normal, requestId: randomUUID(),
       deviceRegistered: false }, decision: 'deny', reasonCode: 'device_not_registered' },
+    { name: '기기 등록 값이 없는 요청', request: { ...withoutRegistration,
+      requestId: randomUUID() }, decision: 'deny' },
+    { name: '문자열로 위조한 기기 등록 값', request: { ...normal,
+      requestId: randomUUID(), deviceRegistered: 'true' }, decision: 'deny' },
+    { name: '등록 기기의 자료실 목록 읽기', request: { ...normal,
+      requestId: randomUUID(), path: '/notes', route: 'GET /notes' }, decision: 'allow' },
+    { name: '등록 기기의 쓰기 요청', request: { ...normal,
+      requestId: randomUUID(), method: 'POST' }, decision: 'deny' },
+    { name: '등록 기기의 다른 경로 요청', request: { ...normal,
+      requestId: randomUUID(), path: '/admin' }, decision: 'deny' },
   ];
   if (ruleIds.includes('step_up_required')) {
     checks.push(
