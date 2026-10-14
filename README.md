@@ -35,6 +35,21 @@ bundle-notes.json과 artifacts/submission.json은 커밋하지 않습니다.
 
 # BYTE BACK 방어전 시작 틀 R5 — 7단계 저장점
 
+## 현재 운영 주소 — 2026-10-14
+
+운영 사이트는 https://choi-bujang-secret-vault-5-flame.vercel.app/ 입니다.
+`aleph.config.json`의 `publicAppUrl`을 이 주소로 통일했습니다. 자기 점검 대상과
+심판 토큰 검증의 audience는 이 운영 호스트를 사용합니다. 심판 측에서도 같은
+호스트를 대상으로 토큰을 발급해야 합니다. Supabase 로그인 audience와 judgeIssuer는 유지합니다.
+아래 과거 기록의 `7zk7` 주소는 이전 저장소의 배포이며 현재 운영 주소가 아닙니다.
+배포 식별 파일의 publicAppUrl은 개별 배포 추적을 위한 Vercel 고유 주소로 유지합니다.
+
+확인: `npm.cmd run test:web` 후 운영 사이트에서 서버 상태 확인 버튼과 버전 표시를 확인합니다.
+정상은 서버 응답 정상과 버전·커밋 표시이며, 비로그인 자료 API는 401 또는 403이어야 합니다.
+이 주소 수정만으로 화면의 고정 단계 문구나 DB·판정기 연결이 변경되지는 않습니다.
+푸시 후 `/api/version`의 commit과 `/aleph.json`의 commit을 GitHub 커밋과 대조해
+재배포 완료 여부를 확인합니다. 실제 심판 발급 토큰을 이용한 운영 검증은 미실행입니다.
+
 ## 7단계 저장점 — 2026-10-14
 
 배포 반영 시 원격 웹앱 복원 커밋 1a20184의 이력을 병합합니다.
