@@ -1,3 +1,38 @@
+# BYTE BACK 방어전 시작 틀 R5 — 8단계 저장점
+
+## 8단계 저장점 — 2026-10-14
+
+판정기는 서비스·메서드·정확한 경로로 구역을 나눕니다. notes는 GET /notes/:id만,
+announcements는 GET /announcements 및 GET /announcements/:id만 허용합니다.
+instructor-materials와 모든 쓰기·메모 전체 목록·알 수 없는 경로·쿼리·export 기능 경로는 거부합니다.
+ID를 UUID로 제한하지 않으며 소유자는 판정기에서 비교하지 않습니다.
+기존 기기 등록·복합 위험 재확인과 응답 다섯 항목을 보존합니다.
+RULE_IDS는 device_registered, notes_read_scope, resource_read_scope, step_up_required입니다.
+
+메모 API는 검증된 사용자 ID와 저장된 owner_id를 함께 적용합니다.
+직접 요청의 메모 경로·ID를 대조하고 쿼리·본문의 역할·구역 지정은 거부합니다.
+거부 로그에는 고정 사유 코드만 남기며 타인 메모는 존재 여부를 숨겨 404로 반환합니다.
+기존 /api/notes·/api/materials 주소, 본인 CRUD, 화면 메뉴·서버 상태·버전 표시는 보존합니다.
+공지·강사 자료 API와 관리 경로는 미구현이며 저장된 강사 권한의 테이블·필드가 확인되지 않아
+강사 권한 대조는 미구현입니다. 엔진의 announcements 서비스 등록·연결도 미확인입니다.
+
+설정 step은 8, repoUrl은 Git origin과 일치합니다. allowedRoutes에는
+GET /api/notes/:id, GET /api/announcements, GET /api/announcements/:id만 기록합니다.
+기존 배포 주소·Supabase 발급자·audience·JWKS·원본 API 주소는 기존 구현과 대조했으며 judgeIssuer는 보존합니다.
+API의 기존 CRUD와 판정기의 읽기 전용 허용 범위는 별개입니다.
+공개 원본·public/data.json의 notes는 빈 배열을 유지합니다.
+
+검증: 가상 판정기 연습 9개, 입력·재확인·구역 시험 14개, 웹 모의 시험 27개 통과.
+다시 실행: npm.cmd run test:web 및 node --test test/decider-zones.test.mjs.
+정상은 본인 메모 CRUD·등록 기기 단건/공지 GET 허용, 거부는 타인 API 404·권한 위조 400·판정기 금지 요청 deny입니다.
+화면에서는 로그인 → 메모 추가·수정·삭제를 확인합니다. 구역 판정용 화면 버튼은 없습니다.
+실제 계정 DB·저장된 강사 권한·엔진 연결·최신 배포 검증은 미실행이며 모의 시험은 심판 판정이 아닙니다.
+빌드: npm.cmd run build -- --local. 커밋 후 npm.cmd run bundle로 제출 JSON을 생성합니다.
+HTTP 자기 점검은 실제 보낸 요청의 상태만 기록하며 실패·배포 불일치를 성공으로 쓰지 않습니다.
+푸시·재배포는 미실행입니다. .local·하위 저장소·학습 DB·기존 작업은 보존합니다.
+bundle-notes.json과 artifacts/submission.json은 커밋하지 않습니다.
+아래 1~7단계 기록은 과거 상태입니다.
+
 # BYTE BACK 방어전 시작 틀 R5 — 7단계 저장점
 
 ## 7단계 저장점 — 2026-10-14

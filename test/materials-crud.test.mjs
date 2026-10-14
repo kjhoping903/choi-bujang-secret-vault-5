@@ -33,9 +33,9 @@ test('A/B own CRUD, cross-owner denial, immutable owners, and unauthenticated de
   const oldUrl = process.env.SUPABASE_URL, oldKey = process.env.SUPABASE_SECRET_KEY;
   process.env.SUPABASE_URL = 'https://ozapzbiuvusywjlstfrv.supabase.co';
   process.env.SUPABASE_SECRET_KEY = 'local-test-only';
-  const call = async (method, token, id, body) => {
+  const call = async (method, token, id, body, url) => {
     const response = { setHeader() {}, status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; }, end() { return this; } };
-    await handler({ method, headers: { authorization: token }, query: typeof id === 'object' && id !== null ? id : id ? { id } : {}, body }, response);
+    await handler({ method, headers: { authorization: token }, query: typeof id === 'object' && id !== null ? id : id ? { id } : {}, body, url }, response);
     return response;
   };
   try {
@@ -53,6 +53,21 @@ test('A/B own CRUD, cross-owner denial, immutable owners, and unauthenticated de
       assert.deepEqual((await call('GET', token)).body, [{ id, ...input }]);
       assert.deepEqual((await call('GET', token, id)).body, { id, ...input });
       const before = { ...rows.get(id) };
+      for (const root of ['notes', 'materials']) {
+        assert.equal((await call('GET', token, id, undefined, `/api/${root}/${id}`)).code, 200);
+        assert.equal((await call('GET', otherToken, id, undefined, `/api/${root}/${id}`)).code, 404);
+      }
+      for (const path of ['/api/announcements', `/api/instructor-materials/${id}`, '/api/notes/export']) {
+        const denied = await call('GET', token, id, { role: 'instructor' }, path);
+        assert.equal(denied.code, 404);
+        assert.deepEqual(denied.body, { error: 'RESOURCE_NOT_ALLOWED' });
+      }
+      for (const field of ['role', 'userId', 'service', 'resourceId', 'zone']) {
+        assert.equal((await call('GET', token, { id, [field]: 'instructor' })).code, 400);
+        assert.equal((await call('PUT', otherToken, id, { ...input, [field]: 'instructor' })).code, 400);
+        assert.deepEqual(rows.get(id), before);
+      }
+      assert.equal((await call('GET', token, id, undefined, '/api/notes')).code, 400);
       for (const method of ['GET', 'PUT', 'DELETE']) {
         assert.equal((await call(method, otherToken, id, { title: 'changed', body: 'changed' })).code, 404);
         assert.deepEqual(rows.get(id), before);

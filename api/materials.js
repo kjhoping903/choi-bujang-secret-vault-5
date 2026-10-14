@@ -10,15 +10,28 @@ let database;
 // Only the unchanged starter verifier establishes identity. Query/body claims are ignored.
 export default async function handler(request, response) {
   response.setHeader('Cache-Control', 'no-store');
+  const reject = (status, reason) => {
+    // Fixed codes only: no tokens, user IDs, URLs or note contents in logs.
+    console.warn(`materials_denied:${reason}`);
+    return response.status(status).json({ error: reason });
+  };
+  if (request.url !== undefined) {
+    const path = typeof request.url === 'string' ? request.url.split('?')[0] : '';
+    if (!/^\/api\/(?:notes|materials)(?:\/[0-9a-f-]+)?$/iu.test(path)) {
+      return reject(404, 'RESOURCE_NOT_ALLOWED');
+    }
+    const pathId = path.split('/')[3];
+    if (pathId !== request.query?.id) return reject(400, 'RESOURCE_ID_MISMATCH');
+  }
   const id = request.query?.id;
   const methods = id === undefined ? ['GET', 'POST'] : ['GET', 'PUT', 'DELETE'];
   if (!methods.includes(request.method)) {
     response.setHeader('Allow', methods.join(', '));
-    return response.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
+    return reject(405, 'METHOD_NOT_ALLOWED');
   }
   const authorization = request.headers?.authorization;
   if (typeof authorization !== 'string' || !authorization) {
-    return response.status(401).json({ error: 'UNAUTHORIZED' });
+    return reject(401, 'UNAUTHORIZED');
   }
   let identity;
   try {
@@ -34,14 +47,23 @@ export default async function handler(request, response) {
     // Configuration failures must not expose cards or server secrets.
     return response.status(503).json({ error: 'LOGIN_VERIFIER_UNAVAILABLE' });
   }
-  if (!identity) return response.status(401).json({ error: 'UNAUTHORIZED' });
-  if (Object.hasOwn(request.query ?? {}, 'owner_id')) return response.status(400).json({ error: 'OWNER_NOT_ALLOWED' });
+  if (!identity || typeof identity.userId !== 'string' || !identity.userId) return reject(401, 'UNAUTHORIZED');
+  if (Object.hasOwn(request.query ?? {}, 'owner_id')) return reject(400, 'OWNER_NOT_ALLOWED');
+  // Resource and privilege selection belong to server routes, not client claims.
+  if (Object.keys(request.query ?? {}).some(key => key !== 'id')) {
+    return reject(400, 'QUERY_NOT_ALLOWED');
+  }
+  let claimedBody;
+  try { claimedBody = typeof request.body === 'string' ? JSON.parse(request.body) : request.body; } catch {}
+  if (claimedBody && ['role', 'userId', 'service', 'resourceId', 'zone'].some(key => Object.hasOwn(claimedBody, key))) {
+    return reject(400, 'CLIENT_AUTHORITY_NOT_ALLOWED');
+  }
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (id !== undefined && (typeof id !== 'string' || !uuid.test(id))) return response.status(400).json({ error: 'INVALID_ID' });
   let input;
   if (['POST', 'PUT'].includes(request.method)) {
     try { input = typeof request.body === 'string' ? JSON.parse(request.body) : request.body; } catch {}
-    if (input && Object.hasOwn(input, 'owner_id')) return response.status(400).json({ error: 'OWNER_NOT_ALLOWED' });
+    if (input && Object.hasOwn(input, 'owner_id')) return reject(400, 'OWNER_NOT_ALLOWED');
     if (!input || typeof input.title !== 'string' || !input.title.trim() || input.title.length > 200
       || typeof input.body !== 'string' || !input.body.trim() || input.body.length > 10000
       || (request.method === 'POST' && input.id !== undefined && (typeof input.id !== 'string' || !uuid.test(input.id)))) {
@@ -74,7 +96,8 @@ export default async function handler(request, response) {
         : table().delete().select('id');
       const { data, error } = await query.eq('id', id).eq('owner_id', identity.userId).maybeSingle();
       if (error) return response.status(503).json({ error: 'NOTE_OPERATION_FAILED' });
-      if (!data) return response.status(404).json({ error: 'NOT_FOUND' });
+      // Do not reveal whether the row exists for another owner.
+      if (!data) return reject(404, 'NOT_FOUND');
       if (request.method === 'DELETE') return response.status(204).end();
       return response.status(200).json(note(data));
     }

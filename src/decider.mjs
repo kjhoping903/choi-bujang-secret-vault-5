@@ -1,6 +1,6 @@
 // Only engine-verified decision-contract requests belong at this boundary.
 // The engine verifies login and the subject/device binding before calling decide.
-export const RULE_IDS = Object.freeze(['device_registered', 'notes_read_scope', 'step_up_required']);
+export const RULE_IDS = Object.freeze(['device_registered', 'notes_read_scope', 'resource_read_scope', 'step_up_required']);
 
 // This boundary receives engine requests, never raw HTTP headers. A source label
 // alone cannot authenticate a request; judge fixtures remain simulated evidence.
@@ -30,21 +30,37 @@ export function inspectConnectionInput(request) {
   };
 }
 
+// Decode only to reject path ambiguities, not to impose a UUID format on IDs.
+function matchesItemPath(path, root) {
+  if (typeof path !== 'string' || !path.startsWith(`${root}/`)) return false;
+  const rawId = path.slice(root.length + 1);
+  let id;
+  try { id = decodeURIComponent(rawId); } catch { return false; }
+  return id.trim().length > 0 && !/[\s/\\?#%]/u.test(id)
+    && id !== '.' && id !== '..' && id.toLowerCase() !== 'export';
+}
+
 function inspectDecisionInput(request) {
   const registered = request?.schema === 'aleph.decision.v1'
     && typeof request.subjectId === 'string' && request.subjectId.trim().length > 0
     && typeof request.deviceId === 'string' && /^[a-f0-9]{16}$/u.test(request.deviceId)
     && request.deviceRegistered === true;
-  const notesRead = request?.service === 'notes' && request.method === 'GET'
-    && ((request.route === 'GET /notes' && request.path === '/notes')
-      || (request.route === 'GET /notes/:id' && typeof request.path === 'string'
-        && /^\/notes\/[^/?#]+$/u.test(request.path)));
-  return { registered, notesRead, connection: inspectConnectionInput(request) };
+  const read = request?.method === 'GET' && request.queryLength === 0;
+  const notesRead = read && request.service === 'notes'
+    && request.route === 'GET /notes/:id' && matchesItemPath(request.path, '/notes');
+  const announcementsRead = read && request.service === 'announcements'
+    && ((request.route === 'GET /announcements' && request.path === '/announcements')
+      || (request.route === 'GET /announcements/:id'
+        && matchesItemPath(request.path, '/announcements')));
+  // Instructor materials and unknown service/route combinations never allow.
+  return { registered, notesRead, resourceRead: notesRead || announcementsRead,
+    connection: inspectConnectionInput(request) };
 }
 
 export async function decide(request) {
-  const { registered, notesRead, connection } = inspectDecisionInput(request);
-  const allowed = registered && notesRead;
+  const { registered, notesRead, resourceRead, connection } = inspectDecisionInput(request);
+  const allowed = registered && resourceRead;
+  const scopeRules = ['device_registered', notesRead ? 'notes_read_scope' : 'resource_read_scope'];
   // The existing fixture represents a read burst with risk_signal. This is
   // simulated evidence, not measured location or live request telemetry.
   const compoundRisk = connection.source === 'judge_fixture'
@@ -65,6 +81,6 @@ export async function decide(request) {
     // Keep the existing denial code; do not invent an unregistered engine code.
     reasonCode: requiresStepUp ? 'step_up_required' : allowed ? 'approved' : 'device_not_registered',
     ruleIds: !registered ? ['device_registered']
-      : compoundRisk && allowed ? [...RULE_IDS] : ['device_registered', 'notes_read_scope'],
+      : compoundRisk && allowed ? [...scopeRules, 'step_up_required'] : scopeRules,
   };
 }
