@@ -1,7 +1,7 @@
 // The student changes this check as each stage adds an attack to the same app.
 // Never return tokens, private keys, real names, or note bodies.
 export async function runAttackChecks(config) {
-  if (![1, 2, 3, 4, 5, 6].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
+  if (![1, 2, 3, 4, 5, 6, 7].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
   let app;
   try {
     app = new URL(config.publicAppUrl);
@@ -12,7 +12,9 @@ export async function runAttackChecks(config) {
       || app.pathname !== '/' || app.hostname.endsWith('.example')) {
     throw new Error('aleph.config.json의 실제 배포 주소를 먼저 넣어 주세요.');
   }
-  if (config.step >= 3 && config.step <= 6) {
+  // Stage 7 keeps real anonymous checks; simulated step-up results belong in
+  // the explanation, never in these HTTP observations.
+  if (config.step >= 3 && config.step <= 7) {
     const attempts = [];
     for (const [method, path] of [['GET', '/api/notes'], ['POST', '/api/notes'],
       ['GET', '/api/notes/00000000-0000-4000-8000-000000000000'],

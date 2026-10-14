@@ -6,3 +6,6 @@ node_modules/
 public/aleph.json
 
 .local/
+
+# Separate clone; preserve it without including another repository in bundles.
+/choi-bujang-secret-vault-5/
