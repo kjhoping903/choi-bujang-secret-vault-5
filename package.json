@@ -1,11 +1,18 @@
 {
-  "name": "choi-bujang-secret-vault-5",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "decider:test": "node scripts/decider-test.mjs"
-  },
-  "engines": {
-    "node": ">=22"
-  }
+    "name":  "aleph-defense-starter",
+    "private":  true,
+    "type":  "module",
+    "scripts":  {
+                    "build":  "node scripts/build-public.mjs",
+                    "decider:test":  "node scripts/decider-test.mjs",
+                    "test:web":  "node --experimental-test-module-mocks --test test/materials-crud.test.mjs test/health-status.test.mjs test/login-ui.test.mjs test/login-visibility.test.mjs test/t05-health.test.mjs test/version-badge.test.mjs test/version-info.test.mjs"
+                },
+    "engines":  {
+                    "node":  "\u003e=22"
+                },
+    "dependencies":  {
+                         "@supabase/supabase-js":  "2.117.2",
+                         "jose":  "6.2.12"
+                     },
+    "version":  "1.0.0"
 }
