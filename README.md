@@ -1,20 +1,60 @@
-# BYTE BACK 방어전 시작 틀 R5 — 9단계 저장점
+# BYTE BACK 방어전 시작 틀 R5 — 10단계 저장점
 
-## 9단계 저장점 — 2026-10-15
+## 10단계 저장점 — 2026-10-15
 
-탐지 연습 입력은 사건의 `at`, `method`, `identity.sub`만 복사합니다.
-같은 사용자의 GET 사건이 임의의 10분 창에서 120건을 넘으면
-`{ action: 'propose_revocation', reasonCode: 'burst_read', subject }`만 반환하고,
-그 밖에는 `{ action: 'observe' }`만 반환합니다. 네트워크·기기·지역·메모·토큰·실명은
-읽거나 저장하거나 출력하지 않습니다. 판정기 응답 형식과 회수 API·기기 권한은 변경하지 않았습니다.
+복구 후 1~9단계의 정상·금지 요청을 재실행하는 순서를 문서화했습니다.
+검증된 기준본의 커밋 SHA 또는 SHA-256을 확인하기 전에는 복구·운영 반영을 승인하지 않습니다.
+실행 전에 복구 버전과 변경 범위를 출력하고, 기준본 부재·해시 불일치·회귀 실패 시 중단합니다.
+A의 정상 자료 요청, B의 A 자료 요청 거부, 거부 감사 로그, 정상 응답 보존을 격리된 환경에서
+확인한 뒤에만 운영 반영을 검토합니다. 이번 단계에서는 기준본 복구와 실제 A/B·운영 DB·감사 로그
+회귀 시험을 실행하지 않았습니다.
 
-검증: `npm run detect:test`와 `node --test test/detect-input.test.mjs` 통과.
-다시 실행: `npm.cmd run detect:test` 및 `node --test test/detect-input.test.mjs`.
-이 연습은 가상 사건 확인이며 실제 운영 엔진의 접속 회수나 심판 판정이 아닙니다.
-현재 저장점에서는 운영 엔진 연결·실제 회수 집행·최신 배포 검증을 수행하지 않았습니다.
+문서에 적은 재실행 순서에는 `npm.cmd run test:package`, `node --test test/r5.test.mjs`,
+`npm.cmd run test:web`, `npm.cmd run decider:test`, `npm.cmd run fixture:7`,
+`node --test test/decider-input.test.mjs test/decider-step-up.test.mjs`,
+`node --test test/decider-zones.test.mjs`, `npm.cmd run detect:test`,
+`node --test test/detect-input.test.mjs`, 마지막 `npm.cmd run bundle`이 포함됩니다.
+이 저장점에서 위 명령과 실제 A/B 교차 사용자·감사 로그·복구 전후 응답 비교는 미실행입니다.
 커밋 후 `npm.cmd run bundle`로 제출 JSON을 생성합니다.
 bundle-notes.json과 artifacts/submission.json은 커밋하지 않습니다.
-아래 1~8단계 기록은 과거 상태입니다.
+아래 1~9단계 기록은 과거 상태입니다.
+
+## 복구 후 1~9단계 회귀 실행 순서 — 미실행
+
+아래 순서는 검증된 기준본을 별도로 확보하고 복구한 뒤 실행합니다. 현재 이 저장소에서는
+기준본 복구, 실제 계정 A/B, 운영 DB, 감사 로그, 배포 환경 회귀 시험을 실행하지 않았습니다.
+아래 `통과`는 기대 결과일 뿐이며, 명령을 실행하기 전에는 결과를 통과로 기록하지 않습니다.
+
+1. **복구 전 상태 고정**: 현재 정책 파일, 배포 식별 정보, DB 백업과 감사 로그 보관 위치를 기록합니다.
+   기준본의 커밋 SHA 또는 정책 파일 SHA-256을 기준본 기록과 대조하고, 다르면 중단합니다.
+2. **시작 틀·패키징 확인**: `npm.cmd run test:package`와
+   `node --test test/r5.test.mjs`를 실행합니다. 패키지 경로와 기본 계약이 맞지 않으면 중단합니다.
+3. **자료실 기본 동작 확인**: `npm.cmd run test:web`를 실행합니다.
+   비로그인 자료 요청은 401/403, 로그인 UI와 서버 상태 확인은 기존 계약을 유지해야 합니다.
+   이 명령은 실제 A/B 소유권을 증명하지 않으므로 별도 회귀가 필요합니다.
+4. **A/B 소유권 회귀**: 격리된 테스트 환경에서 A로 로그인해 A 자료 목록·단건 GET·수정·삭제를
+   확인합니다. B 세션으로 같은 A 자료를 목록·단건 GET·수정·삭제 요청하고 모두 거부되는지 확인합니다.
+   정상 A 응답의 상태 코드와 JSON 키·자료 내용은 복구 전 기록과 비교하며, 본문·토큰·실명은 기록하지 않습니다.
+5. **판정기 기본·기기 정책**: `npm.cmd run decider:test`를 실행합니다.
+   등록 기기 정상 요청은 `allow`/`approved`, 미등록 또는 누락 요청은 `deny`/
+   `device_not_registered`여야 합니다. 판정기 응답 다섯 항목은 변경하지 않습니다.
+6. **복합 위험 재확인**: `npm.cmd run fixture:7`과
+   `node --test test/decider-input.test.mjs test/decider-step-up.test.mjs`를 실행합니다.
+   정상 가상 요청은 `allow`, 복합 위험 요청은 `step_up`이어야 하며, 이 결과는 운영 심판 판정이 아닙니다.
+7. **허용 구역·금지 구역 회귀**: `node --test test/decider-zones.test.mjs`를 실행합니다.
+   허용된 본인 자료 GET은 `allow`, 목록·쓰기·쿼리·강사 자료·알 수 없는 경로는 `deny`여야 합니다.
+8. **탐지 회귀**: `npm.cmd run detect:test`와
+   `node --test test/detect-input.test.mjs`를 실행합니다. 10분 안 GET 120건 이하는
+   `observe`, 121건 이상은 `propose_revocation` 세 키, 서로 다른 사용자·느린 조회는 `observe`여야 합니다.
+9. **감사·응답·제출 확인**: 거부된 B 요청이 고정 사유만으로 감사 로그에 남고 비밀값이 없는지,
+   허용된 A 응답이 복구 전과 같은지 확인합니다. 마지막으로 `npm.cmd run bundle`을 실행하되,
+   실제로 보낸 요청 결과만 기록합니다. 운영 반영은 네 회귀 범위가 모두 통과한 뒤에만 승인합니다.
+
+**현재 실행 기록:** 위 1~9단계와 A/B 교차 사용자·감사 로그·복구 전후 응답 비교는
+이번 문서 변경에서 실행하지 않았습니다. 따라서 현재 README에는 통과 결과를 추가하지 않습니다.
+복구 실패, 기준본 해시 불일치, 테스트 컨테이너와 운영 환경 혼합, 또는 네 회귀 중 하나라도
+실패하면 운영 반영을 승인하지 않고 복구 전 백업으로 되돌립니다. `git reset --hard`로
+학습 자료나 다른 작업을 삭제하지 않습니다.
 
 # BYTE BACK 방어전 시작 틀 R5 — 8단계 저장점
 
