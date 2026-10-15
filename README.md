@@ -1,3 +1,21 @@
+# BYTE BACK 방어전 시작 틀 R5 — 9단계 저장점
+
+## 9단계 저장점 — 2026-10-15
+
+탐지 연습 입력은 사건의 `at`, `method`, `identity.sub`만 복사합니다.
+같은 사용자의 GET 사건이 임의의 10분 창에서 120건을 넘으면
+`{ action: 'propose_revocation', reasonCode: 'burst_read', subject }`만 반환하고,
+그 밖에는 `{ action: 'observe' }`만 반환합니다. 네트워크·기기·지역·메모·토큰·실명은
+읽거나 저장하거나 출력하지 않습니다. 판정기 응답 형식과 회수 API·기기 권한은 변경하지 않았습니다.
+
+검증: `npm run detect:test`와 `node --test test/detect-input.test.mjs` 통과.
+다시 실행: `npm.cmd run detect:test` 및 `node --test test/detect-input.test.mjs`.
+이 연습은 가상 사건 확인이며 실제 운영 엔진의 접속 회수나 심판 판정이 아닙니다.
+현재 저장점에서는 운영 엔진 연결·실제 회수 집행·최신 배포 검증을 수행하지 않았습니다.
+커밋 후 `npm.cmd run bundle`로 제출 JSON을 생성합니다.
+bundle-notes.json과 artifacts/submission.json은 커밋하지 않습니다.
+아래 1~8단계 기록은 과거 상태입니다.
+
 # BYTE BACK 방어전 시작 틀 R5 — 8단계 저장점
 
 ## 8단계 저장점 — 2026-10-14
