@@ -1,7 +1,7 @@
 // The student changes this check as each stage adds an attack to the same app.
 // Never return tokens, private keys, real names, or note bodies.
 export async function runAttackChecks(config) {
-  if (![1, 2, 3, 4, 5, 6, 7, 8].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
   let app;
   try {
     app = new URL(config.publicAppUrl);
@@ -12,9 +12,9 @@ export async function runAttackChecks(config) {
       || app.pathname !== '/' || app.hostname.endsWith('.example')) {
     throw new Error('aleph.config.json의 실제 배포 주소를 먼저 넣어 주세요.');
   }
-  // Stages 7?8 keep real anonymous checks; simulated step-up results belong in
+  // Stages 7-9 keep real anonymous checks; simulated step-up results belong in
   // the explanation, never in these HTTP observations.
-  if (config.step >= 3 && config.step <= 8) {
+  if (config.step >= 3 && config.step <= 9) {
     const attempts = [];
     for (const [method, path] of [['GET', '/api/notes'], ['POST', '/api/notes'],
       ['GET', '/api/notes/00000000-0000-4000-8000-000000000000'],
@@ -68,7 +68,7 @@ export async function runAttackChecks(config) {
       } catch { observed = '요청 실패: 차단 성공으로 판단하지 않음; anon 키 검증 미실행'; }
       attempts.push({ attackId: 'original_without_api_key', expected: '키 없는 요청은 거부; anon 키 직접 접근 차단 검증은 별도 필요', observed });
     }
-    if (config.step === 8) {
+    if (config.step >= 8) {
       for (const [method, path] of [['GET', '/api/announcements'],
         ['POST', '/api/announcements'], ['GET', '/api/instructor-materials'],
         ['POST', '/api/instructor-materials']]) {
