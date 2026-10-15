@@ -23,8 +23,9 @@ export function detect(events) {
   const readsBySubject = new Map();
   for (const { at, method, identity } of readDetectionEvents(events)) {
     if (method !== 'GET') continue;
+    const timestamp = Date.parse(at);
     if (!readsBySubject.has(identity.sub)) readsBySubject.set(identity.sub, []);
-    readsBySubject.get(identity.sub).push(Date.parse(at));
+    readsBySubject.get(identity.sub).push(timestamp);
   }
   for (const [subject, times] of readsBySubject) {
     times.sort((a, b) => a - b);

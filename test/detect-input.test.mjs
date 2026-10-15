@@ -21,6 +21,8 @@ test('normal and burst fixtures retain only three contract fields without mutati
     }
     const result = readDetectionEvents(input);
     assert.deepEqual(result, before);
+    assert.deepEqual(Object.keys(result[0]).sort(), ['at', 'identity', 'method']);
+    assert.deepEqual(Object.keys(result[0].identity), ['sub']);
     assert.notEqual(result[0], input[0]);
     assert.notEqual(result[0].identity, input[0].identity);
     assert.deepEqual(detect(input), count > 120
