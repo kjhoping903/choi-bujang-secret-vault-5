@@ -65,3 +65,31 @@ test('stage 3 deployment manifest publishes actual routes and public issuer', ()
   assert.deepEqual(manifest.identityProvider, stage3.identityProvider);
   assert.ok(!('sampleMarker' in manifest));
 });
+
+for (const step of [9, 10]) {
+  test(`stage ${step} identity preserves deployment and API metadata`, () => {
+    const stageConfig = {
+      ...config, step,
+      allowedRoutes: ['GET /api/notes/:id'],
+      identityProvider: { issuer: 'https://project.supabase.co/auth/v1', audience: 'authenticated' },
+      originalApiUrl: 'https://project.supabase.co/rest/v1/learning_notes',
+    };
+    assert.deepEqual(deploymentIdentity(env, stageConfig), {
+      schema: 'aleph.defense.deployment.v1', step,
+      repoUrl: 'https://github.com/student-a/aleph-defense',
+      commit: 'a'.repeat(40),
+      publicAppUrl: 'https://student-defense-123.vercel.app',
+      judgeIssuer: config.judgeIssuer,
+      allowedRoutes: stageConfig.allowedRoutes,
+      identityProvider: stageConfig.identityProvider,
+      originalApiUrl: stageConfig.originalApiUrl,
+    });
+    assert.throws(() => deploymentIdentity({}, stageConfig), /Vercel/u);
+  });
+}
+
+test('deployment identity rejects unsupported stages', () => {
+  for (const step of [0, 11, '10', null]) {
+    assert.throws(() => deploymentIdentity(env, { ...config, step }), /1~10/u);
+  }
+});
